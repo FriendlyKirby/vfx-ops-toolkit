@@ -1,0 +1,9 @@
+shows_root: "examples/shows"
+
+naming:
+  frame_prefix: "frame_"
+  frame_padding: 4
+  frame_ext: ".exr"
+
+thresholds:
+  disk_warning_mb: 500
