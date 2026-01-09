@@ -2,9 +2,13 @@ import argparse
 from pathlib import Path
 
 from .config import load_config
+from .monitoring import disk_usage_by_shot, format_bytes
 from .validation import validate_renders
 
-def main() -> int: # returns an exit code
+def main() -> int:
+    """
+    CLI entrypoint. Returns a process exit code (0 ok, 1 validation issues).
+    """
     parser = argparse.ArgumentParser(
         prog="toolkit",
         description="VFX Ops Toolkit - production-safe validation and monitoring"
@@ -15,7 +19,7 @@ def main() -> int: # returns an exit code
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("validate", help="Scan renders and report missing frames")
-    sub.add_parser("disk", help="Report disk usage by show/shot (planned)")
+    sub.add_parser("disk", help="Report disk usage by show/shot")
     sub.add_parser("publish", help="Record publish metadata (planned)")
 
     args = parser.parse_args()
@@ -68,8 +72,22 @@ def main() -> int: # returns an exit code
         return 1 if had_missing else 0
 
     if args.command == "disk":
-        print(f"[disk] shows_root={shows_root}")
-        print("[disk] (placeholder) will report disk usage")
+        results = disk_usage_by_shot(shows_root)
+        print(f"Disk usage under: {shows_root}")
+        if not results:
+            print("No shots found.")
+            return 0
+        
+        results.sort(key=lambda r: (r.show, r.shot))
+        current_show = None
+
+        for r in results:
+            if r.show != current_show:
+                current_show = r.show
+                print(f"\nShow: {r.show}")
+            print(
+                f"  Shot: {r.shot}  render= {format_bytes(r.total_bytes)}  ({r.file_count} files)"
+            )
         return 0
 
     if args.command == "publish":

@@ -2,6 +2,9 @@ from pathlib import Path
 import yaml
 
 def load_config(path=None) -> dict:
+    """
+    Load YAML config (deafaults to ./toolkit.yaml). Returns {} if missing.
+    """
     # If argparse gives 1-item list (nargs=1) or append list -> normalize it
     if isinstance(path, list):
         path = path[-1] if path else None

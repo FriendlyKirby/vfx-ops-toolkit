@@ -6,6 +6,7 @@ from typing import Iterable
 
 @dataclass(frozen=True)
 class ShotValidationResult:
+    """Validation result for one shot render directory"""
     show: str
     shot: str
     render_dir: Path
@@ -13,10 +14,16 @@ class ShotValidationResult:
     missing_frames: list[int]
 
 def _build_frame_regex(prefix: str, padding: int, ext: str) -> re.Pattern:
+    """
+    Return a compiled regex for frame files; group 1 captures the frame number
+    """
     ext_escaped = re.escape(ext)
     return re.compile(rf"^{re.escape(prefix)}(\d{{{padding}}}){ext_escaped}$")
 
 def _collect_frame_numbers(render_dir: Path, frame_re: re.Pattern) -> list[int]:
+    """
+    Return sorted frame unmbers found in render_dir matching frame_re
+    """
     frames: list[int] = []
     for p in render_dir.iterdir():
         if not p.is_file():
@@ -29,6 +36,9 @@ def _collect_frame_numbers(render_dir: Path, frame_re: re.Pattern) -> list[int]:
     return frames
 
 def _compute_missing(frames: list[int]) -> list[int]:
+    """
+    Return missing frame numbers between min(frames) and max(frames)
+    """
     if not frames:
         return []
     lo, hi = frames[0], frames[-1]
@@ -37,6 +47,9 @@ def _compute_missing(frames: list[int]) -> list[int]:
     return missing
 
 def iter_shot_render_dirs(shows_root: Path) -> Iterable[tuple[str, str, Path]]:
+    """
+    Yield (show_name, shot_name, render_dir) for: shows_root/<show>/shots/renders
+    """
     if not shows_root.exists():
         return
     for show_dir in sorted([p for p in shows_root.iterdir() if p.is_dir()]):
@@ -57,6 +70,9 @@ def validate_renders(
         frame_padding: int = 4,
         frame_ext: str = ".exr",
 ) -> list[ShotValidationResult]:
+    """
+    Scan all shot render dirs and report missing frames for each shot
+    """
     frame_re = _build_frame_regex(frame_prefix, frame_padding, frame_ext)
     results: list[ShotValidationResult] = []
     for show, shot, render_dir in iter_shot_render_dirs(shows_root):
