@@ -54,8 +54,8 @@ Show: demo_show
     OK (no missing frames).
 ```
 
-### `disk` (placeholder)
-Currently prints the configured `shows_root` and a placeholder message.
+### `disk`
+Reports disk usage for each shot render directory (total size + file count).
 
 ```bash
 python -m toolkit disk
@@ -63,8 +63,8 @@ python -m toolkit disk
 
 Example output:
 ```text
-[disk] shows_root=examples/shows
-[disk] (placeholder) will report disk usage
+Show: demo_show
+  Shot: shot010  render= 0 B (3 files)
 ```
 
 ### `publish` (placeholder)
@@ -144,7 +144,7 @@ LICENSE
 ## Status / roadmap
 - [x] Foundation: package entrypoint + config-driven CLI scaffold
 - [x] Implement `validate`: scan image sequences and report missing frames
-- [ ] Implement `disk`: compute disk usage by show/shot and compare to thresholds
+- [x] Implement `disk`: compute disk usage by show/shot and compare to thresholds
 - [ ] Add publish simulation + tracking adapter interface
 - [ ] Add logging + structured output (human + machine readable)
 - [ ] Add tests + linting + CI workflow
