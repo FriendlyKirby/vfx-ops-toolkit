@@ -26,7 +26,7 @@ def main() -> int: # returns an exit code
     naming = cfg.get("naming", {}) if isinstance(cfg.get("naming", {}), dict) else {}
     frame_prefix = naming.get("frame_prefix", "frame_")
     try:
-        frame_padding = int(naming.get("grame_padding", 4))
+        frame_padding = int(naming.get("frame_padding", 4))
     except (TypeError, ValueError):
         frame_padding = 4
     frame_ext = naming.get("frame_ext", ".exr")
