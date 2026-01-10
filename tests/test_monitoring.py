@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from toolkit.monitoring import _dir_size_bytes, disk_usage_by_shot, format_bytes
+from toolkit.monitoring import _dir_size_bytes, disk_usage_by_shot, format_bytes, bytes_to_mb
 
 
 def _touch_with_size(path: Path, size: int) -> None:
@@ -40,3 +40,7 @@ def test_disk_usage_by_shot_reports_expected_totals(tmp_path: Path):
     assert r.shot == "shot010"
     assert r.total_bytes == 300
     assert r.file_count == 2
+
+def test_bytes_to_mb():
+    assert bytes_to_mb(0) == 0.0
+    assert bytes_to_mb(1024 * 1024) == 1.0

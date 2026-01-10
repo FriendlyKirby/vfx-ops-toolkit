@@ -1,8 +1,11 @@
 import argparse
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import load_config
-from .monitoring import disk_usage_by_shot, format_bytes
+from .logging_utils import setup_logging
+from .monitoring import bytes_to_mb, disk_usage_by_shot, format_bytes
 from .validation import validate_renders
 
 def main() -> int:
@@ -13,20 +16,34 @@ def main() -> int:
         prog="toolkit",
         description="VFX Ops Toolkit - production-safe validation and monitoring"
     )
-    parser.add_argument("--config", default=None, help="Path to toolkit.yaml (default: ./toolkit.yaml)")
-    parser.add_argument("--shows-root", default=None, help="Override shows_root from config")
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("validate", help="Scan renders and report missing frames")
-    sub.add_parser("disk", help="Report disk usage by show/shot")
-    sub.add_parser("publish", help="Record publish metadata (planned)")
+    validate_p = sub.add_parser("validate", help="Scan renders and report missing frames")
+    disk_p = sub.add_parser("disk", help="Report disk usage by show/shot")
+    publish_p = sub.add_parser("publish", help="Record publish metadata (planned)")
+
+    for p in (validate_p, disk_p, publish_p):
+        p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+        p.add_argument("--log-dir", default=None, help="Directory for log files (default: ./logs)")
+        p.add_argument("--config", default=None, help="Path to toolkit.yaml (default: ./toolkit.yaml)")
+        p.add_argument("--shows-root", default=None, help="Override shows_root from config")
 
     args = parser.parse_args()
+    
     cfg = load_config(args.config)
 
-    # default
+    # Resolve settings: CLI overrides config, then fall back to defaults
     shows_root = Path(args.shows_root or cfg.get("shows_root", "examples/shows"))
+
+    log_dir_value = args.log_dir or cfg.get("log_dir", "logs")
+    log_dir = Path(log_dir_value)
+
+    logger = setup_logging(log_dir)
+    logger.info("command=%s shows_root=%s", args.command, shows_root)
+
+    use_json = bool(args.json)
+
     naming = cfg.get("naming", {}) if isinstance(cfg.get("naming", {}), dict) else {}
     frame_prefix = naming.get("frame_prefix", "frame_")
     try:
@@ -42,6 +59,27 @@ def main() -> int:
             frame_padding=frame_padding,
             frame_ext=frame_ext
         )
+
+        if use_json:
+            payload = {
+                "tool": "vfx-ops-toolkit",
+                "command": "validate",
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "shows_root": str(shows_root),
+                "results": [
+                    {
+                        "show": r.show,
+                        "shot": r.shot,
+                        "render_dir": str(r.render_dir),
+                        "frames_found": r.frames_found,
+                        "missing_frames": r.missing_frames
+                    }
+                    for r in results
+                ]
+            }
+            print(json.dumps(payload, indent=2))
+            had_missing = any(r.missing_frames for r in results)
+            return 1 if had_missing else 0
 
         if not results:
             print(f"No shots found under: {shows_root}")
@@ -65,6 +103,7 @@ def main() -> int:
                 had_missing = True
                 missing_str = ", ".join(f"{f:0{frame_padding}d}" for f in r.missing_frames)
                 print(f"    Missing frames: {missing_str}")
+                logger.warning("missing_frames show=%s shot=%s missing=%s", r.show, r.shot, r.missing_frames)
 
             else:
                 print("    OK (no missing frames)")
@@ -73,6 +112,35 @@ def main() -> int:
 
     if args.command == "disk":
         results = disk_usage_by_shot(shows_root)
+
+        thresholds = cfg.get("thresholds", {}) if isinstance(cfg.get("thresholds", {}), dict) else {}
+        try:
+            warn_mb = float(thresholds.get("disk_warning_mb", 0))
+        except (TypeError, ValueError):
+            warn_mb = 0.0
+
+        if use_json:
+            payload = {
+                "tool": "vfx-ops-toolkit",
+                "command": "disk",
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "shows_root": str(shows_root),
+                "results": [
+                    {
+                        "show": r.show,
+                        "shot": r.shot,
+                        "render_dir": str(r.render_dir),
+                        "total_bytes": r.total_bytes,
+                        "file_count": r.file_count,
+                        "total_mb": round(bytes_to_mb(r.total_bytes), 3),
+                        "warning": (warn_mb > 0 and bytes_to_mb(r.total_bytes) >= warn_mb)
+                    }
+                    for r in results
+                ]
+            }
+            print(json.dumps(payload, indent=2))
+            return 0
+
         print(f"Disk usage under: {shows_root}")
         if not results:
             print("No shots found.")
@@ -85,10 +153,20 @@ def main() -> int:
             if r.show != current_show:
                 current_show = r.show
                 print(f"\nShow: {r.show}")
-            print(
-                f"  Shot: {r.shot}  render= {format_bytes(r.total_bytes)}  ({r.file_count} files)"
-            )
+            
+            mb = bytes_to_mb(r.total_bytes)
+            warn = (warn_mb > 0 and mb >= warn_mb)
+
+            line = f"  Shot: {r.shot}  renders={format_bytes(r.total_bytes)} ({r.file_count} files)"
+            if warn:
+                line += f"  [WARN >= {warn_mb:.0f} MB]"
+                logger.warning("disk_warning show=%s shot=%s mb=%.3f threshold=%.3f", r.show, r.shot, mb, warn_mb)
+
+            print(line)
+            
+        logger.info("disk_scan_complete shots=%d", len(results))
         return 0
+    
 
     if args.command == "publish":
         print(f"[publish] shows_root={shows_root}")

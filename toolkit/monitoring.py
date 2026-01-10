@@ -49,6 +49,9 @@ def disk_usage_by_shot(shows_root: Path) -> list[ShotDiskUsage]:
         )
     return results
 
+def bytes_to_mb(num_bytes: int) -> float:
+    return num_bytes / (1024 * 1024)
+
 def format_bytes(num_bytes: int) -> str:
     """
     Covert a byte count into a formatted string (e.g. 1536 -> '1.5 KB')

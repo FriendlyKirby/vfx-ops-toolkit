@@ -16,12 +16,17 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 **Implemented**
 - Runnable module entrypoint: `python -m toolkit ...`
 - Missing-frame detection for image sequences (e.g., `frame_0001.exr`)
+- Disk usage reporting by show/shot (total size + file count)
 - Config-driven naming rules and show root via `toolkit.yaml` (PyYAML)
+- Disk warning thresholds via `toolkit.yaml` (e.g., `thresholds.disk_warning_mb`)
+- File logging to `logs/toolkit.log` (configurable via `--log-dir` or `log_dir` in YAML)
+- Optional machine-readable JSON output via `--json`
 - Example “studio-like” directory structure under `examples/`
 
 **Planned**
-- Disk usage reporting by show/shot with configurable thresholds
 - Publish simulation + tracking adapter (integration-ready design)
+- CI workflow + packaging polish (pyproject + editable installs)
+- Documentation polish + expanded examples
 
 ## Quick start
 ```bash
@@ -32,6 +37,8 @@ python -m toolkit disk
 
 ## Commands
 All commands read settings from `toolkit.yaml` by default (or `--config <path>` if provided). You can also override the scanned root with `--shows-root <path>`.
+
+> Note: flags are provided *after* the command (e.g., `python -m toolkit validate --json`).
 
 ### `validate`
 Scans the configured show/shot structure and reports missing frames in image sequences.
@@ -54,8 +61,13 @@ Show: demo_show
     OK (no missing frames).
 ```
 
+Machine-readable output:
+```bash
+python -m toolkit validate --json
+```
+
 ### `disk`
-Reports disk usage for each shot render directory (total size + file count).
+Reports disk usage for each shot render directory (total size + file count). If a threshold is configured, shots meeting/exceeding the warning threshold are annotated.
 
 ```bash
 python -m toolkit disk
@@ -63,8 +75,21 @@ python -m toolkit disk
 
 Example output:
 ```text
+Disk usage under: examples/shows
+
 Show: demo_show
-  Shot: shot010  render= 0 B (3 files)
+  Shot: shot010  renders=0 B (3 files)
+```
+
+Example output (with threshold warnings enabled):
+```text
+Show: demo_show
+  Shot: shot010  renders=512.0 MB (239 files)  [WARN >= 500 MB]
+```
+
+Machine-readable output:
+```bash
+python -m toolkit disk --json
 ```
 
 ### `publish` (placeholder)
@@ -105,6 +130,11 @@ Override the root without editing YAML:
 python -m toolkit validate --shows-root examples/shows
 ```
 
+Write logs to a custom directory:
+```bash
+python -m toolkit validate --log-dir logs
+```
+
 ## Safety
 The toolkit is **read-only by default**:
 - No files are deleted, moved, or modified
@@ -122,10 +152,12 @@ This project is designed so tracking can be added without entangling core logic:
 ## Repository layout
 ```text
 toolkit/
-  __main__.py      # module entrypoint (python -m toolkit)
-  cli.py           # CLI parsing + command dispatch
-  config.py        # YAML config loader
-  validation.py    # render validation (missing frames)
+  __main__.py         # module entrypoint (python -m toolkit)
+  cli.py              # CLI parsing + command dispatch
+  config.py           # YAML config loader
+  validation.py       # render validation (missing frames)
+  monitoring.py       # disk usage reporting + formatting helpers
+  logging_utils.py    # file logging setup
 examples/
   shows/demo_show/shots/shot010/renders/
     frame_0001.exr
@@ -134,9 +166,11 @@ examples/
 docs/
   pm/
   training/
-logs/              # optional run logs (generated later)
+logs/                 # run logs (toolkit.log)
 toolkit.yaml
 requirements.txt
+requirements-dev.txt
+tests/
 README.md
 LICENSE
 ```
@@ -145,10 +179,11 @@ LICENSE
 - [x] Foundation: package entrypoint + config-driven CLI scaffold
 - [x] Implement `validate`: scan image sequences and report missing frames
 - [x] Implement `disk`: compute disk usage by show/shot and compare to thresholds
+- [x] Add logging + structured output (human + machine readable JSON)
+- [x] Add unit tests for core modules
 - [ ] Add publish simulation + tracking adapter interface
-- [ ] Add logging + structured output (human + machine readable)
-- [ ] Add tests + linting + CI workflow
-- [ ] Documentation polish + examples
+- [ ] Packaging polish (pyproject + editable install) + CLI subprocess tests
+- [ ] Documentation polish + expanded examples
 
 ## Non-goals
 - This is not a renderer, render farm scheduler, or DCC plugin.
