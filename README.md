@@ -21,10 +21,11 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 - Disk warning thresholds via `toolkit.yaml` (e.g., `thresholds.disk_warning_mb`)
 - File logging to `logs/toolkit.log` (configurable via `--log-dir` or `log_dir` in YAML)
 - Optional machine-readable JSON output via `--json`
+- Publish simulation: records publish metadata (version, timestamp, note) **without moving/deleting files**
+- Simulated production tracking backend (JSON file) for publish records (adapter-style design)
 - Example “studio-like” directory structure under `examples/`
 
 **Planned**
-- Publish simulation + tracking adapter (integration-ready design)
 - CI workflow + packaging polish (pyproject + editable installs)
 - Documentation polish + expanded examples
 
@@ -58,7 +59,7 @@ Example output (no gaps):
 ```text
 Show: demo_show
   Shot: shot010
-    OK (no missing frames).
+    OK (no missing frames)
 ```
 
 Machine-readable output:
@@ -92,17 +93,28 @@ Machine-readable output:
 python -m toolkit disk --json
 ```
 
-### `publish` (placeholder)
-Currently prints the configured `shows_root` and a placeholder message.
+### `publish`
+Records a publish event for a specific show/shot. This is a **simulation**: it validates frames and measures render directory size, then writes a publish record to the configured tracking backend (default: a local JSON file). No files are moved/deleted.
 
 ```bash
-python -m toolkit publish
+python -m toolkit publish --show demo_show --shot shot010 --version v001 --note "first publish"
 ```
 
 Example output:
 ```text
-[publish] shows_root=examples/shows
-[publish] (placeholder) will record publish metadata (no file moves/deletes)
+Publish recorded:
+  Show: demo_show
+  Shot: shot010
+  Version: v001
+  Status: warnings
+  Missing frames: 0003
+  Renders size: 30 B (3 files)
+  Note: first publish
+```
+
+Machine-readable output:
+```bash
+python -m toolkit publish --show demo_show --shot shot010 --json
 ```
 
 ## Configuration
@@ -118,6 +130,13 @@ naming:
 
 thresholds:
   disk_warning_mb: 500
+
+tracking:
+  backend: "json"
+  json_path: "data/tracking_db.json"
+
+publishing:
+  publish_root: "published"
 ```
 
 Run with an explicit config path:
@@ -136,10 +155,10 @@ python -m toolkit validate --log-dir logs
 ```
 
 ## Safety
-The toolkit is **read-only by default**:
+The toolkit is **read-only by default** with respect to production data:
 - No files are deleted, moved, or modified
 - Commands scan and report only
-- Intended to be safe to run on shared storage
+- `publish` records metadata to a tracking file (by default under `data/`), but does not change render outputs
 
 ## Integration-ready tracking
 In real studios, publish events are often tracked in a production system (e.g., Autodesk Flow Production Tracking).
@@ -147,7 +166,9 @@ This project is designed so tracking can be added without entangling core logic:
 
 - Core validation/analysis should not depend on an external service
 - A small tracking adapter interface can support different backends
-- A local simulated tracker (e.g., JSON file) keeps the project runnable anywhere (including CI)
+- A local simulated tracker (JSON file) keeps the project runnable anywhere (including CI)
+
+This repo currently includes a JSON-backed tracker (`toolkit/tracking/json_tracker.py`) and a publish record schema (`toolkit/tracking/base.py`).
 
 ## Repository layout
 ```text
@@ -158,19 +179,38 @@ toolkit/
   validation.py       # render validation (missing frames)
   monitoring.py       # disk usage reporting + formatting helpers
   logging_utils.py    # file logging setup
+  publishing.py       # publish simulation (records metadata)
+  tracking/
+    __init__.py        # tracking package
+    base.py            # tracking adapter interface / record types
+    json_tracker.py    # JSON tracking backend
 examples/
-  shows/demo_show/shots/shot010/renders/
-    frame_0001.exr
-    frame_0002.exr
-    frame_0004.exr   # (0003 missing on purpose for validation)
+  shows/
+    demo_show/
+      shots/
+        shot010/
+          renders/
+            frame_0001.exr
+            frame_0002.exr
+            frame_0004.exr   # (0003 missing on purpose)
 docs/
   pm/
-  training/
-logs/                 # run logs (toolkit.log)
+    training/
+logs/
+  toolkit.log          # runtime log output
+data/
+  tracking_db.json     # local tracking DB (runtime output)
+tests/
+  __init__.py
+  test_config.py
+  test_json_tracker.py
+  test_logging_utils.py
+  test_monitoring.py
+  test_publishing.py
+  test_validation.py
 toolkit.yaml
 requirements.txt
 requirements-dev.txt
-tests/
 README.md
 LICENSE
 ```
@@ -181,7 +221,7 @@ LICENSE
 - [x] Implement `disk`: compute disk usage by show/shot and compare to thresholds
 - [x] Add logging + structured output (human + machine readable JSON)
 - [x] Add unit tests for core modules
-- [ ] Add publish simulation + tracking adapter interface
+- [x] Add publish simulation + JSON tracking backend (adapter-style)
 - [ ] Packaging polish (pyproject + editable install) + CLI subprocess tests
 - [ ] Documentation polish + expanded examples
 

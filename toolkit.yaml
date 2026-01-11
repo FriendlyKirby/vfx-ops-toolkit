@@ -7,3 +7,10 @@ naming:
 
 thresholds:
   disk_warning_mb: 500
+
+tracking:
+  backend: "json"
+  json_path: "data/tracking_db.json"
+
+publishing:
+  publish_root: "published"
