@@ -15,6 +15,7 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 ## Features
 **Implemented**
 - Runnable module entrypoint: `python -m toolkit ...`
+- Console script entrypoint: `toolkit ...` (packaged via `pyproject.toml`)
 - Missing-frame detection for image sequences (e.g., `frame_0001.exr`)
 - Disk usage reporting by show/shot (total size + file count)
 - Config-driven naming rules and show root via `toolkit.yaml` (PyYAML)
@@ -23,29 +24,42 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 - Optional machine-readable JSON output via `--json`
 - Publish simulation: records publish metadata (version, timestamp, note) **without moving/deleting files**
 - Simulated production tracking backend (JSON file) for publish records (adapter-style design)
+- Unit tests for core modules + CLI subprocess tests (pytest)
 - Example “studio-like” directory structure under `examples/`
 
 **Planned**
-- CI workflow + packaging polish (pyproject + editable installs)
+- CI workflow
 - Documentation polish + expanded examples
 
 ## Quick start
+
+### Option A: run without installing (simple)
 ```bash
 pip install -r requirements.txt
 python -m toolkit validate
 python -m toolkit disk
+python -m toolkit publish --show demo_show --shot shot010
+```
+
+### Option B: editable install (recommended for development)
+```bash
+pip install -e ".[dev]"
+toolkit validate
+toolkit disk
+toolkit publish --show demo_show --shot shot010
 ```
 
 ## Commands
 All commands read settings from `toolkit.yaml` by default (or `--config <path>` if provided). You can also override the scanned root with `--shows-root <path>`.
 
-> Note: flags are provided *after* the command (e.g., `python -m toolkit validate --json`).
+> Note: flags are provided *after* the command (e.g., `toolkit validate --json`).
 
 ### `validate`
 Scans the configured show/shot structure and reports missing frames in image sequences.
 
 ```bash
-python -m toolkit validate
+toolkit validate
+# or: python -m toolkit validate
 ```
 
 Example output (with a gap at 0003):
@@ -64,14 +78,15 @@ Show: demo_show
 
 Machine-readable output:
 ```bash
-python -m toolkit validate --json
+toolkit validate --json
 ```
 
 ### `disk`
 Reports disk usage for each shot render directory (total size + file count). If a threshold is configured, shots meeting/exceeding the warning threshold are annotated.
 
 ```bash
-python -m toolkit disk
+toolkit disk
+# or: python -m toolkit disk
 ```
 
 Example output:
@@ -90,14 +105,15 @@ Show: demo_show
 
 Machine-readable output:
 ```bash
-python -m toolkit disk --json
+toolkit disk --json
 ```
 
 ### `publish`
 Records a publish event for a specific show/shot. This is a **simulation**: it validates frames and measures render directory size, then writes a publish record to the configured tracking backend (default: a local JSON file). No files are moved/deleted.
 
 ```bash
-python -m toolkit publish --show demo_show --shot shot010 --version v001 --note "first publish"
+toolkit publish --show demo_show --shot shot010 --version v001 --note "first publish"
+# or: python -m toolkit publish --show demo_show --shot shot010 ...
 ```
 
 Example output:
@@ -114,7 +130,7 @@ Publish recorded:
 
 Machine-readable output:
 ```bash
-python -m toolkit publish --show demo_show --shot shot010 --json
+toolkit publish --show demo_show --shot shot010 --json
 ```
 
 ## Configuration
@@ -141,17 +157,17 @@ publishing:
 
 Run with an explicit config path:
 ```bash
-python -m toolkit validate --config toolkit.yaml
+toolkit validate --config toolkit.yaml
 ```
 
 Override the root without editing YAML:
 ```bash
-python -m toolkit validate --shows-root examples/shows
+toolkit validate --shows-root examples/shows
 ```
 
 Write logs to a custom directory:
 ```bash
-python -m toolkit validate --log-dir logs
+toolkit validate --log-dir logs
 ```
 
 ## Safety
@@ -203,16 +219,18 @@ data/
 tests/
   __init__.py
   test_config.py
+  test_cli.py
   test_json_tracker.py
   test_logging_utils.py
   test_monitoring.py
   test_publishing.py
   test_validation.py
-toolkit.yaml
+LICENSE
+pyproject.toml
+README.md
 requirements.txt
 requirements-dev.txt
-README.md
-LICENSE
+toolkit.yaml
 ```
 
 ## Status / roadmap
@@ -222,7 +240,8 @@ LICENSE
 - [x] Add logging + structured output (human + machine readable JSON)
 - [x] Add unit tests for core modules
 - [x] Add publish simulation + JSON tracking backend (adapter-style)
-- [ ] Packaging polish (pyproject + editable install) + CLI subprocess tests
+- [x] Packaging polish (pyproject + editable install) + CLI subprocess tests
+- [ ] CI workflow
 - [ ] Documentation polish + expanded examples
 
 ## Non-goals

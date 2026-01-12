@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vfx-ops-toolkit"
+version = "0.1.0"
+description = "Production-safe validation, monitoring, and publish simulation for VFX-style show/shot structures."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+toolkit = "toolkit.cli:run"
+
+[tool.setuptools.packages.find]
+include = ["toolkit*"]

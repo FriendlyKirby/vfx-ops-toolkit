@@ -243,3 +243,6 @@ def main() -> int:
 
 
     return 0
+
+def run() -> None:
+    raise SystemExit(main())
