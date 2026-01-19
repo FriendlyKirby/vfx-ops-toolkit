@@ -24,6 +24,7 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 - Optional machine-readable JSON output via `--json`
 - Publish simulation: records publish metadata (version, timestamp, note) **without moving/deleting files**
 - Simulated production tracking backend (JSON file) for publish records (adapter-style design)
+- Publish history listing with filtering (`list-publishes`)
 - Unit tests for core modules + CLI subprocess tests (pytest)
 - Example “studio-like” directory structure under `examples/`
 
@@ -39,6 +40,7 @@ pip install -r requirements.txt
 python -m toolkit validate
 python -m toolkit disk
 python -m toolkit publish --show demo_show --shot shot010
+python -m toolkit list-publishes
 ```
 
 ### Option B: editable install (recommended for development)
@@ -47,6 +49,7 @@ pip install -e ".[dev]"
 toolkit validate
 toolkit disk
 toolkit publish --show demo_show --shot shot010
+toolkit list-publishes
 ```
 
 ## Commands
@@ -131,6 +134,26 @@ Publish recorded:
 Machine-readable output:
 ```bash
 toolkit publish --show demo_show --shot shot010 --json
+```
+
+### `list-publishes`
+Lists publish records from the tracking backend (default: local JSON file). Supports filtering by show/shot.
+
+```bash
+toolkit list-publishes
+toolkit list-publishes --show demo_show
+toolkit list-publishes --shot shot010
+```
+
+Example output:
+```text
+Publish records:
+- 2026-01-19T06:59:55.059285Z  demo_show/shot010  v001  status=warnings  note=publish test
+```
+
+Machine-readable output:
+```bash
+toolkit list-publishes --json
 ```
 
 ## Configuration
@@ -240,6 +263,7 @@ toolkit.yaml
 - [x] Add logging + structured output (human + machine readable JSON)
 - [x] Add unit tests for core modules
 - [x] Add publish simulation + JSON tracking backend (adapter-style)
+- [x] Add publish history listing with filtering (`list-publishes`)
 - [x] Packaging polish (pyproject + editable install) + CLI subprocess tests
 - [ ] CI workflow
 - [ ] Documentation polish + expanded examples

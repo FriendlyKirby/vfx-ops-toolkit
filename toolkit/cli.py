@@ -6,9 +6,10 @@ from pathlib import Path
 from .config import load_config
 from .logging_utils import setup_logging
 from .monitoring import bytes_to_mb, disk_usage_by_shot, format_bytes
-from .publishing import publish_shot
-from .tracking.json_tracker import JsonTracker
+from .publishing import PublishError, publish_shot
+from .tracking.factory import make_tracker
 from .validation import validate_renders
+
 
 def main() -> int:
     """
@@ -23,21 +24,26 @@ def main() -> int:
 
     validate_p = sub.add_parser("validate", help="Scan renders and report missing frames")
     disk_p = sub.add_parser("disk", help="Report disk usage by show/shot")
-    publish_p = sub.add_parser("publish", help="Record publish metadata (planned)")
+    publish_p = sub.add_parser("publish", help="Record publish metadata")
+    list_p = sub.add_parser("list-publishes", help="List publish records from tracking backend")
 
     publish_p.add_argument("--show", required=True, help="Show name (e.g. demo_show)")
     publish_p.add_argument("--shot", required=True, help="Shot name (e.g. shot010)")
     publish_p.add_argument("--version", default="v001", help="Publish version (default: v001)")
     publish_p.add_argument("--note", default="", help="Optional publish note")
 
-    for p in (validate_p, disk_p, publish_p):
+    list_p.add_argument("--show", default=None, help="Filter by show")
+    list_p.add_argument("--shot", default=None, help="Filter by shot")
+    list_p.add_argument("--limit", type=int, default=50, help="Max records to display (default: 50)")
+
+    for p in (validate_p, disk_p, publish_p, list_p):
         p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
         p.add_argument("--log-dir", default=None, help="Directory for log files (default: ./logs)")
         p.add_argument("--config", default=None, help="Path to toolkit.yaml (default: ./toolkit.yaml)")
         p.add_argument("--shows-root", default=None, help="Override shows_root from config")
 
     args = parser.parse_args()
-    
+
     cfg = load_config(args.config)
 
     # Resolve settings: CLI overrides config, then fall back to defaults
@@ -91,7 +97,7 @@ def main() -> int:
         if not results:
             print(f"No shots found under: {shows_root}")
             return 0
-        
+
         results.sort(key=lambda r: (r.show, r.shot))
         current_show = None
         had_missing = False
@@ -111,7 +117,6 @@ def main() -> int:
                 missing_str = ", ".join(f"{f:0{frame_padding}d}" for f in r.missing_frames)
                 print(f"    Missing frames: {missing_str}")
                 logger.warning("missing_frames show=%s shot=%s missing=%s", r.show, r.shot, r.missing_frames)
-
             else:
                 print("    OK (no missing frames)")
 
@@ -152,7 +157,7 @@ def main() -> int:
         if not results:
             print("No shots found.")
             return 0
-        
+
         results.sort(key=lambda r: (r.show, r.shot))
         current_show = None
 
@@ -160,7 +165,7 @@ def main() -> int:
             if r.show != current_show:
                 current_show = r.show
                 print(f"\nShow: {r.show}")
-            
+
             mb = bytes_to_mb(r.total_bytes)
             warn = (warn_mb > 0 and mb >= warn_mb)
 
@@ -170,33 +175,33 @@ def main() -> int:
                 logger.warning("disk_warning show=%s shot=%s mb=%.3f threshold=%.3f", r.show, r.shot, mb, warn_mb)
 
             print(line)
-            
+
         logger.info("disk_scan_complete shots=%d", len(results))
         return 0
-    
 
     if args.command == "publish":
-        tracking_cfg = cfg.get("tracking", {}) if isinstance(cfg.get("tracking", {}), dict) else {}
-        backend = tracking_cfg.get("backend", "json")
-
-        if backend != "json":
-            print(f"Unsupported tracking backend: {backend}. Only 'json' is implemented.")
+        try:
+            tracker = make_tracker(cfg)
+        except ValueError as e:
+            print(str(e))
             return 2
 
-        json_path = tracking_cfg.get("json_path", "data/tracking_db.json")
-        tracker = JsonTracker(Path(json_path))
-
-        result = publish_shot(
-            shows_root=shows_root,
-            show=args.show,
-            shot=args.shot,
-            version=args.version,
-            note=args.note,
-            tracker=tracker,
-            frame_prefix=frame_prefix,
-            frame_padding=frame_padding,
-            frame_ext=frame_ext,
-        )
+        try:
+            result = publish_shot(
+                shows_root=shows_root,
+                show=args.show,
+                shot=args.shot,
+                version=args.version,
+                note=args.note,
+                tracker=tracker,
+                frame_prefix=frame_prefix,
+                frame_padding=frame_padding,
+                frame_ext=frame_ext,
+            )
+        except PublishError as e:
+            logger.error("publish_failed %s", e)
+            print(f"ERROR: {e}")
+            return 2
 
         logger.info(
             "publish show=%s shot=%s version=%s status=%s",
@@ -241,8 +246,57 @@ def main() -> int:
 
         return 0
 
+    if args.command == "list-publishes":
+        try:
+            tracker = make_tracker(cfg)
+        except ValueError as e:
+            print(str(e))
+            return 2
+
+        records = tracker.list_publishes(show=args.show, shot=args.shot)
+        records = records[: max(0, args.limit)]
+
+        if use_json:
+            payload = {
+                "tool": "vfx-ops-toolkit",
+                "command": "list-publishes",
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "filters": {"show": args.show, "shot": args.shot, "limit": args.limit},
+                "count": len(records),
+                "records": [
+                    {
+                        "show": r.show,
+                        "shot": r.shot,
+                        "version": r.version,
+                        "status": r.status,
+                        "note": r.note,
+                        "timestamp_utc": r.timestamp_utc,
+                        "frames_found": r.frames_found,
+                        "missing_frames": r.missing_frames,
+                        "total_bytes": r.total_bytes,
+                        "file_count": r.file_count,
+                    }
+                    for r in records
+                ],
+            }
+            print(json.dumps(payload, indent=2))
+            return 0
+
+        if not records:
+            print("No publish records found.")
+            return 0
+
+        print("Publish records:")
+        for r in records:
+            line = f"- {r.timestamp_utc}  {r.show}/{r.shot}  {r.version}  status={r.status}"
+            if r.note:
+                line += f"  note={r.note}"
+            print(line)
+
+        return 0
 
     return 0
+
 
 def run() -> None:
     raise SystemExit(main())

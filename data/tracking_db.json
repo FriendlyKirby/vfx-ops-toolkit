@@ -16,5 +16,23 @@
     ],
     "total_bytes": 0,
     "file_count": 3
+  },
+  {
+    "show": "demo_show",
+    "shot": "shot010",
+    "version": "v001",
+    "status": "warnings",
+    "note": "publish test",
+    "timestamp_utc": "2026-01-19T06:59:55.059285Z",
+    "frames_found": [
+      1,
+      2,
+      4
+    ],
+    "missing_frames": [
+      3
+    ],
+    "total_bytes": 0,
+    "file_count": 3
   }
 ]

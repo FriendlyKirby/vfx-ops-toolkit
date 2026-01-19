@@ -1,6 +1,7 @@
+import pytest
 from pathlib import Path
-
 from toolkit.publishing import publish_shot
+from toolkit.publishing import PublishError
 from toolkit.tracking.json_tracker import JsonTracker
 
 
@@ -40,3 +41,22 @@ def test_publish_shot_creates_record(tmp_path: Path):
 
     stored = tracker.list_publishes(show="demo_show", shot="shot010")
     assert len(stored) == 1
+
+def test_publish_shot_raises_if_renders_missing(tmp_path: Path):
+    shows_root = tmp_path / "shows"
+    (shows_root / "demo_show" / "shots" / "shot010").mkdir(parents=True, exist_ok=True)
+
+    tracker = JsonTracker(tmp_path / "tracking.json")
+
+    with pytest.raises(PublishError):
+        publish_shot(
+            shows_root=shows_root,
+            show="demo_show",
+            shot="shot010",
+            version="v001",
+            note="",
+            tracker=tracker,
+            frame_prefix="frame_",
+            frame_padding=4,
+            frame_ext=".exr",
+        )

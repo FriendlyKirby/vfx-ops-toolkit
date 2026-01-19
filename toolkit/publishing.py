@@ -8,6 +8,9 @@ from .monitoring import _dir_size_bytes
 from .validation import validate_renders
 from .tracking.base import PublishRecord, Tracker
 
+class PublishError(RuntimeError):
+    pass
+
 @dataclass(frozen=True)
 class PublishResult:
     record: PublishRecord
@@ -33,6 +36,12 @@ def publish_shot(
     """
     shot_root = shows_root / show / "shots" / shot
     render_dir = shot_root / "renders"
+
+    if not shot_root.exists():
+        raise PublishError(f"Shot path not found: {shot_root}")
+
+    if not render_dir.exists() or not render_dir.is_dir():
+        raise PublishError(f"Renders directory not found: {render_dir}")
 
     frames_found: list[int] = []
     missing_frames: list[int] = []
