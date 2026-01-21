@@ -234,7 +234,12 @@ examples/
             frame_0004.exr   # (0003 missing on purpose)
 docs/
   pm/
-    training/
+    milestones.md
+    requirements.md
+    risks.md
+  training/
+    quickstart.md
+  architecture.md
 logs/
   toolkit.log          # runtime log output
 data/
