@@ -26,10 +26,10 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 - Simulated production tracking backend (JSON file) for publish records (adapter-style design)
 - Publish history listing with filtering (`list-publishes`)
 - Unit tests for core modules + CLI subprocess tests (pytest)
+- CI workflow (GitHub Actions) running tests on push/pull requests
 - Example “studio-like” directory structure under `examples/`
 
 **Planned**
-- CI workflow
 - Documentation polish + expanded examples
 
 ## Quick start
@@ -51,6 +51,14 @@ toolkit disk
 toolkit publish --show demo_show --shot shot010
 toolkit list-publishes
 ```
+
+## Development
+Run the test suite locally:
+```bash
+pytest -q
+```
+
+CI runs `pytest` via GitHub Actions on push/pull requests (see `.github/workflows/ci.yml`).
 
 ## Commands
 All commands read settings from `toolkit.yaml` by default (or `--config <path>` if provided). You can also override the scanned root with `--shows-root <path>`.
@@ -211,14 +219,17 @@ This repo currently includes a JSON-backed tracker (`toolkit/tracking/json_track
 
 ## Repository layout
 ```text
+.github/
+  workflows/
+    ci.yml             # GitHub Actions CI (pytest)
 toolkit/
-  __main__.py         # module entrypoint (python -m toolkit)
-  cli.py              # CLI parsing + command dispatch
-  config.py           # YAML config loader
-  validation.py       # render validation (missing frames)
-  monitoring.py       # disk usage reporting + formatting helpers
-  logging_utils.py    # file logging setup
-  publishing.py       # publish simulation (records metadata)
+  __main__.py          # module entrypoint (python -m toolkit)
+  cli.py               # CLI parsing + command dispatch
+  config.py            # YAML config loader
+  validation.py        # render validation (missing frames)
+  monitoring.py        # disk usage reporting + formatting helpers
+  logging_utils.py     # file logging setup
+  publishing.py        # publish simulation (records metadata)
   tracking/
     __init__.py        # tracking package
     base.py            # tracking adapter interface / record types
@@ -270,7 +281,7 @@ toolkit.yaml
 - [x] Add publish simulation + JSON tracking backend (adapter-style)
 - [x] Add publish history listing with filtering (`list-publishes`)
 - [x] Packaging polish (pyproject + editable install) + CLI subprocess tests
-- [ ] CI workflow
+- [x] CI workflow (GitHub Actions)
 - [ ] Documentation polish + expanded examples
 
 ## Non-goals
