@@ -132,6 +132,8 @@ toolkit disk --json
 ### `publish`
 Records a publish event for a specific show/shot. This is a **simulation**: it validates frames and measures render directory size, then writes a publish record to the configured tracking backend (default: a local JSON file). No files are moved/deleted.
 
+Also writes a publish manifest JSON to `published/<show>/<shot>/<version>/publish.json` (configurable via `publishing.publish_root`). This manifest is written outside the renders directory.
+
 ```bash
 toolkit publish --show demo_show --shot shot010 --version v001 --note "first publish"
 # or: python -m toolkit publish --show demo_show --shot shot010 ...
@@ -145,8 +147,9 @@ Publish recorded:
   Version: v001
   Status: warnings
   Missing frames: 0003
-  Renders size: 30 B (3 files)
+  Renders size: 4.0 KB (3 files)
   Note: first publish
+  Manifest: published\demo_show\shot010\v001\publish.json
 ```
 
 Machine-readable output:

@@ -36,6 +36,9 @@ MANIFEST
 logs/
 data/
 
+# Generated publish artifacts
+published/
+
 # Toolkit demo
 toolkit_demo.yaml
 

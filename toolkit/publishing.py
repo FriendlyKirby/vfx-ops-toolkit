@@ -1,12 +1,13 @@
 from __future__ import annotations
-
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .monitoring import _dir_size_bytes
 from .validation import validate_renders
 from .tracking.base import PublishRecord, Tracker
+
+import json
 
 class PublishError(RuntimeError):
     pass
@@ -83,3 +84,23 @@ def publish_shot(
     )
     tracker.record_publish(record)
     return PublishResult(record=record)
+
+def write_publish_manifest(*, publish_root: Path, shows_root: Path, record: PublishRecord) -> Path:
+    """
+    Write a publish manifest JSON file to:
+      <publish_root>/<show>/<shot>/<version>/publish.json
+
+    This simulates the kind of metadata artifact a pipeline might generate.
+    """
+    render_dir = shows_root / record.show / "shots" / record.shot / "renders"
+    out_dir = publish_root / record.show / record.shot / record.version
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest_path = out_dir / "publish.json"
+    payload = {
+        "schema": "vfx-ops-toolkit.publish_manifest",
+        "record": asdict(record),
+        "source_render_dir": str(render_dir),
+    }
+    manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return manifest_path

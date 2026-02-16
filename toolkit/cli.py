@@ -6,7 +6,7 @@ from pathlib import Path
 from .config import load_config
 from .logging_utils import setup_logging
 from .monitoring import bytes_to_mb, disk_usage_by_shot, format_bytes
-from .publishing import PublishError, publish_shot
+from .publishing import PublishError, publish_shot, write_publish_manifest
 from .tracking.factory import make_tracker
 from .validation import validate_renders
 
@@ -203,6 +203,20 @@ def main() -> int:
             print(f"ERROR: {e}")
             return 2
 
+        publishing_cfg = cfg.get("publishing", {}) if isinstance(cfg.get("publishing", {}), dict) else {}
+        publish_root = Path(publishing_cfg.get("publish_root", "published"))
+
+        manifest_path = None
+        try:
+            manifest_path = write_publish_manifest(
+                publish_root=publish_root,
+                shows_root=shows_root,
+                record=result.record,
+            )
+            logger.info("publish_manifest=%s", manifest_path)
+        except OSError as e:
+            logger.warning("publish_manifest_write_failed %s", e)
+
         logger.info(
             "publish show=%s shot=%s version=%s status=%s",
             result.record.show,
@@ -216,6 +230,7 @@ def main() -> int:
                 "tool": "vfx-ops-toolkit",
                 "command": "publish",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "manifest_path": str(manifest_path) if manifest_path else None,
                 "record": {
                     "show": result.record.show,
                     "shot": result.record.shot,
@@ -243,6 +258,8 @@ def main() -> int:
         print(f"  Renders size: {format_bytes(result.record.total_bytes)} ({result.record.file_count} files)")
         if result.record.note:
             print(f"  Note: {result.record.note}")
+        if manifest_path:
+            print(f"  Manifest: {manifest_path}")
 
         return 0
 

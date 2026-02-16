@@ -45,6 +45,9 @@ Write-Host "`n-- publish (json)"
 toolkit publish --config $demoCfg --show demo_show --shot shot010 --version v001 --note "demo publish" --json | Out-Host
 Write-Host "publish exit code: $LASTEXITCODE"
 
+Write-Host "`n-- manifest (preview)"
+Get-Content published\demo_show\shot010\v001\publish.json | Select-Object -First 20
+
 Write-Host "`n-- publish (human summary from latest record)"
 toolkit list-publishes --config $demoCfg --show demo_show --limit 1 | Out-Host
 
