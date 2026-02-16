@@ -32,6 +32,13 @@ MANIFEST
 *.manifest
 *.spec
 
+# Toolkit runtime outputs
+logs/
+data/
+
+# Toolkit demo
+toolkit_demo.yaml
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

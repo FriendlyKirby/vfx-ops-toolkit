@@ -60,6 +60,16 @@ pytest -q
 
 CI runs `pytest` via GitHub Actions on push/pull requests (see `.github/workflows/ci.yml`).
 
+## Demo
+A small end-to-end demo script is provided:
+- Windows PowerShell: `scripts/demo.ps1`
+- Bash: `scripts/demo.sh`
+
+Run (PowerShell):
+```powershell
+pwsh scripts/demo.ps1
+```
+
 ## Commands
 All commands read settings from `toolkit.yaml` by default (or `--config <path>` if provided). You can also override the scanned root with `--shows-root <path>`.
 
@@ -207,6 +217,12 @@ The toolkit is **read-only by default** with respect to production data:
 - Commands scan and report only
 - `publish` records metadata to a tracking file (by default under `data/`), but does not change render outputs
 
+## Integration points
+- **CLI-first design:** can be called from automated publish hooks or farm tasks
+- **Config-driven:** adapts to different folder layouts and naming rules via `toolkit.yaml`
+- **Machine-readable output:** `--json` enables downstream tooling and reporting
+- **Tracking adapter:** JSON backend today; designed to swap to a real tracking system later
+
 ## Integration-ready tracking
 In real studios, publish events are often tracked in a production system (e.g., Autodesk Flow Production Tracking).
 This project is designed so tracking can be added without entangling core logic:
@@ -222,6 +238,9 @@ This repo currently includes a JSON-backed tracker (`toolkit/tracking/json_track
 .github/
   workflows/
     ci.yml             # GitHub Actions CI (pytest)
+scripts/
+  demo.ps1             # demo workflow (PowerShell)
+  demo.sh              # demo workflow (bash)
 toolkit/
   __main__.py          # module entrypoint (python -m toolkit)
   cli.py               # CLI parsing + command dispatch
