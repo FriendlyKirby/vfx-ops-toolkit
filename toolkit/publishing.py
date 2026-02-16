@@ -65,7 +65,7 @@ def publish_shot(
     total_bytes, file_count = _dir_size_bytes(render_dir)
 
     status = "ok"
-    if missing_frames:
+    if not frames_found or missing_frames:
         status = "warnings"
 
     ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")

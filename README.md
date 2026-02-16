@@ -1,4 +1,4 @@
-# vfx-ops-toolkit
+﻿# vfx-ops-toolkit
 
 A Python command-line toolkit that simulates production-safe studio utilities for validating render outputs and monitoring storage usage in a VFX-style show/shot folder structure.
 
@@ -27,7 +27,7 @@ This toolkit is intentionally scoped to reflect day-to-day utilities used by:
 - Publish history listing with filtering (`list-publishes`)
 - Unit tests for core modules + CLI subprocess tests (pytest)
 - CI workflow (GitHub Actions) running tests on push/pull requests
-- Example “studio-like” directory structure under `examples/`
+- Example "studio-like" directory structure under `examples/`
 
 **Planned**
 - Documentation polish + expanded examples
@@ -63,7 +63,6 @@ CI runs `pytest` via GitHub Actions on push/pull requests (see `.github/workflow
 ## Demo
 A small end-to-end demo script is provided:
 - Windows PowerShell: `scripts/demo.ps1`
-- Bash: `scripts/demo.sh`
 
 Run (PowerShell):
 ```powershell
@@ -243,7 +242,6 @@ This repo currently includes a JSON-backed tracker (`toolkit/tracking/json_track
     ci.yml             # GitHub Actions CI (pytest)
 scripts/
   demo.ps1             # demo workflow (PowerShell)
-  demo.sh              # demo workflow (bash)
 toolkit/
   __main__.py          # module entrypoint (python -m toolkit)
   cli.py               # CLI parsing + command dispatch

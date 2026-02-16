@@ -39,6 +39,10 @@ data/
 # Generated publish artifacts
 published/
 
+# Local pytest temp dirs
+.tmp/
+.pytest_tmp*/
+
 # Toolkit demo
 toolkit_demo.yaml
 

@@ -16,17 +16,20 @@ class JsonTracker:
 
     def __init__(self, path: Path):
         self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def _load(self) -> list[dict]:
         if not self.path.exists():
             return []
-        data = json.loads(self.path.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return []
         if not isinstance(data, list):
             return []
         return data
 
     def _save(self, rows: list[dict]) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
     def record_publish(self, record: PublishRecord) -> None:

@@ -78,12 +78,12 @@ def main() -> int:
                 "tool": "vfx-ops-toolkit",
                 "command": "validate",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                "shows_root": str(shows_root),
+                "shows_root": shows_root.as_posix(),
                 "results": [
                     {
                         "show": r.show,
                         "shot": r.shot,
-                        "render_dir": str(r.render_dir),
+                        "render_dir": r.render_dir.as_posix(),
                         "frames_found": r.frames_found,
                         "missing_frames": r.missing_frames
                     }
@@ -136,12 +136,12 @@ def main() -> int:
                 "tool": "vfx-ops-toolkit",
                 "command": "disk",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                "shows_root": str(shows_root),
+                "shows_root": shows_root.as_posix(),
                 "results": [
                     {
                         "show": r.show,
                         "shot": r.shot,
-                        "render_dir": str(r.render_dir),
+                        "render_dir": r.render_dir.as_posix(),
                         "total_bytes": r.total_bytes,
                         "file_count": r.file_count,
                         "total_mb": round(bytes_to_mb(r.total_bytes), 3),
@@ -230,7 +230,8 @@ def main() -> int:
                 "tool": "vfx-ops-toolkit",
                 "command": "publish",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                "manifest_path": str(manifest_path) if manifest_path else None,
+                "shows_root": shows_root.as_posix(),
+                "manifest_path": manifest_path.as_posix() if manifest_path else None,
                 "record": {
                     "show": result.record.show,
                     "shot": result.record.shot,
@@ -278,6 +279,7 @@ def main() -> int:
                 "tool": "vfx-ops-toolkit",
                 "command": "list-publishes",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "shows_root": shows_root.as_posix(),
                 "filters": {"show": args.show, "shot": args.shot, "limit": args.limit},
                 "count": len(records),
                 "records": [

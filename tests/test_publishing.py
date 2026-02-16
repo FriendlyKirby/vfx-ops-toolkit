@@ -60,3 +60,27 @@ def test_publish_shot_raises_if_renders_missing(tmp_path: Path):
             frame_padding=4,
             frame_ext=".exr",
         )
+
+
+def test_publish_shot_warns_if_no_frames(tmp_path: Path):
+    shows_root = tmp_path / "shows"
+    renders = shows_root / "demo_show" / "shots" / "shot010" / "renders"
+    renders.mkdir(parents=True)
+
+    tracker = JsonTracker(tmp_path / "tracking.json")
+
+    result = publish_shot(
+        shows_root=shows_root,
+        show="demo_show",
+        shot="shot010",
+        version="v001",
+        note="",
+        tracker=tracker,
+        frame_prefix="frame_",
+        frame_padding=4,
+        frame_ext=".exr",
+    )
+
+    assert result.record.frames_found == []
+    assert result.record.missing_frames == []
+    assert result.record.status == "warnings"
