@@ -69,6 +69,18 @@ Run (PowerShell):
 pwsh scripts/demo.ps1
 ```
 
+## Expanded examples
+The example dataset under `examples/` includes:
+- `shot010`: missing frame 0003 (validate should warn)
+- `shot020`: clean sequence 0001-0003 (validate OK)
+- `shot030`: larger frames to trigger disk warnings when using `toolkit_demo.yaml` (`disk_warning_mb: 0.03`)
+
+Try the examples with the demo config:
+```bash
+toolkit validate --config toolkit_demo.yaml
+toolkit disk --config toolkit_demo.yaml
+```
+
 ## Commands
 All commands read settings from `toolkit.yaml` by default (or `--config <path>` if provided). You can also override the scanned root with `--shows-root <path>`.
 
@@ -92,7 +104,7 @@ Show: demo_show
 Example output (no gaps):
 ```text
 Show: demo_show
-  Shot: shot010
+  Shot: shot020
     OK (no missing frames)
 ```
 
@@ -100,6 +112,7 @@ Machine-readable output:
 ```bash
 toolkit validate --json
 ```
+Note: JSON paths use POSIX-style separators for portability.
 
 ### `disk`
 Reports disk usage for each shot render directory (total size + file count). If a threshold is configured, shots meeting/exceeding the warning threshold are annotated.
@@ -114,13 +127,13 @@ Example output:
 Disk usage under: examples/shows
 
 Show: demo_show
-  Shot: shot010  renders=0 B (3 files)
+  Shot: shot010  renders=4.0 KB (3 files)
 ```
 
-Example output (with threshold warnings enabled):
+Example output (with threshold warnings enabled via `toolkit_demo.yaml`):
 ```text
 Show: demo_show
-  Shot: shot010  renders=512.0 MB (239 files)  [WARN >= 500 MB]
+  Shot: shot030  renders=36.0 KB (3 files)  [WARN >= 0.03 MB]
 ```
 
 Machine-readable output:
@@ -263,6 +276,16 @@ examples/
             frame_0001.exr
             frame_0002.exr
             frame_0004.exr   # (0003 missing on purpose)
+        shot020/
+          renders/
+            frame_0001.exr
+            frame_0002.exr
+            frame_0003.exr
+        shot030/
+          renders/
+            frame_0001.exr
+            frame_0002.exr
+            frame_0003.exr   # larger frames for disk warning demo
 docs/
   pm/
     milestones.md
@@ -302,7 +325,7 @@ toolkit.yaml
 - [x] Add publish history listing with filtering (`list-publishes`)
 - [x] Packaging polish (pyproject + editable install) + CLI subprocess tests
 - [x] CI workflow (GitHub Actions)
-- [ ] Documentation polish + expanded examples
+- [x] Documentation polish + expanded examples
 
 ## Non-goals
 - This is not a renderer, render farm scheduler, or DCC plugin.

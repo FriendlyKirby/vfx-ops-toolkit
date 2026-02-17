@@ -20,7 +20,7 @@ naming:
   frame_ext: ".exr"
 
 thresholds:
-  disk_warning_mb: 500
+  disk_warning_mb: 0.03
 
 tracking:
   backend: "json"

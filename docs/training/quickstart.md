@@ -50,6 +50,18 @@ Add `--json` to any command to print machine-readable output:
 toolkit validate --json
 ```
 
+## Example dataset
+The repo includes a small example dataset under `examples/`:
+- `shot010`: missing frame 0003 (validation warning)
+- `shot020`: clean sequence 0001-0003 (validation OK)
+- `shot030`: larger frames to trigger disk warnings when using `toolkit_demo.yaml` (`disk_warning_mb: 0.03`)
+
+Try the examples with:
+```bash
+toolkit validate --config toolkit_demo.yaml
+toolkit disk --config toolkit_demo.yaml
+```
+
 ## Logs
 Logs are written to `logs/toolkit.log` by default.
 
